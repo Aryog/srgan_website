@@ -15,11 +15,20 @@
 
         <p class="upload-text">Upload low-resolution lumina spine MRI images and get enhanced High-resolution images by 4 times.</p>
 
-        <form class="p-3 text-center" action='/', method="post" enctype="multipart/form-data" id="upload-form">
-            <input class="form-control" type="file" name="imagefile" >
-            <input class="btn btn-primary mt-3"type="submit" value="Super Resolute" id="pic">
+        <form class="p-3 text-center" action='/' method="post" enctype="multipart/form-data" id="upload-form">
+            <input class="form-control" type="file" name="imagefile" id="imagefile" required>
+            {% if image_uploaded %}
+                <input class="btn btn-primary mt-3" type="submit" value="Super Resolute" id="pic">
+            {% else %}
+                <input class="btn btn-primary mt-3" type="submit" value="Super Resolute" id="pic" disabled>
+            {% endif %}
         </form>
-
+        <script>
+            document.getElementById('imagefile').addEventListener('change', function() {
+                var submitBtn = document.getElementById('pic');
+                submitBtn.disabled = this.files.length === 0;
+            });
+        </script>
         <div class="images">
             {% if prediction %}
             <div class="image-container">

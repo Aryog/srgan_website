@@ -1,9 +1,10 @@
 from flask import Flask, render_template, request
 import torch
+import os
 from PIL import Image
 import numpy as np
 from generator import Generator
-
+from datetime import datetime, timedelta
 app = Flask(__name__)
 
 def preprocess_input(image_path):
@@ -53,19 +54,38 @@ if __name__ == "__main__":
 def hello_word():
     return render_template('index.html')
 
-@app.route('/', methods=['POST'])
+# Function to clean up files older than a specified threshold to prevent container from growing
+def clean_up_files(folder, hours_threshold):
+    now = datetime.now()
+    for file_name in os.listdir(folder):
+        file_path = os.path.join(folder, file_name)
+        if os.path.isfile(file_path):
+            modified_time = datetime.fromtimestamp(os.path.getmtime(file_path))
+            if now - modified_time > timedelta(hours=hours_threshold):
+                os.remove(file_path)
+
+@app.route('/', methods=['GET', 'POST'])
 def predict():
-    imagefile= request.files['imagefile']
-    image_path = "./static/input/" + imagefile.filename
-    imagefile.save(image_path)
+    image_uploaded = False
+    if request.method == 'POST':
+        imagefile = request.files.get('imagefile')
+        if imagefile and imagefile.filename:
+            image_path = "./static/input/" + imagefile.filename
+            imagefile.save(image_path)
 
-    output_path = "./static/enhanced/" + imagefile.filename
+            output_path = "./static/enhanced/" + imagefile.filename
 
-    test_single_image(generator_path, image_path, output_path)
-    print(output_path)
-    
+            test_single_image(generator_path, image_path, output_path)
+            print(output_path)
 
-    return render_template('index.html', prediction=output_path, inputFile=image_path)
+            # Clean up files older than 3 hours in the input and enhanced folders
+            clean_up_files("./static/input/", 1)
+            clean_up_files("./static/enhanced/", 1)
+
+            image_uploaded = True
+            return render_template('index.html', prediction=output_path, inputFile=image_path, image_uploaded=image_uploaded)
+
+    return render_template('index.html', image_uploaded=image_uploaded)
 
 
 
